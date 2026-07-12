@@ -49,6 +49,15 @@ All images use `dockerhub.vshn.net` proxy prefix to bypass Docker Hub pull limit
 
 Renovate is configured for auto-merging minor and patch updates. The configuration uses `dockerhub.vshn.net` as the Docker Hub proxy to handle image version resolution.
 
+## Monitoring
+
+PrometheusRule and AlertmanagerConfig in `monitoring/` provide workload alerts (pod readiness, restarts, PVC capacity) routed to Telegram via the `telegram-bot` Secret.
+
+## Telegram
+
+- **evcc notifications**: bot token and chat ID in `evcc/secret.sops.yaml` (inside the evcc.yaml config)
+- **monitoring alerts**: bot token in `monitoring/secret.sops.yaml`, chat ID in `monitoring/alertmanagerconfig.yaml`
+
 ## Database
 
 teslamate uses VSHNPostgreSQL (AppCat managed). The CRD auto-creates a `teslamate-db-credentials` Secret with connection details. No manual DB credential management.
