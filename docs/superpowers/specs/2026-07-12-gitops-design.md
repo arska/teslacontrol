@@ -25,7 +25,7 @@ Internet -> Route (TLS) -> oauth2-proxy -> evcc / teslamate
 
 - tesla-http-proxy is a single shared instance handling Fleet API authentication and signed commands for both evcc and teslamate.
 - oauth2-proxy is a single shared instance fronting both apps, using Google OAuth with an email allowlist.
-- Each app gets its own subdomain on `apps.appuio.cloud`. oauth2-proxy uses `X-Forwarded-Host` to route to the correct upstream.
+- Each app gets its own subdomain on `apps.exoscale-ch-gva-2-0.appuio.cloud`. oauth2-proxy uses `X-Forwarded-Host` to route to the correct upstream.
 
 ## Repo Structure
 
@@ -85,7 +85,7 @@ evcc uses SQLite stored on a PVC mounted at `/root/.evcc/`.
 
 - oauth2-proxy with Google OAuth2 provider.
 - Email allowlist restricting access to authorized users.
-- Two separate OpenShift Routes (separate subdomains), both pointing to the oauth2-proxy Service.
+- Two separate OpenShift Routes (separate subdomains on `apps.exoscale-ch-gva-2-0.appuio.cloud`), both pointing to the oauth2-proxy Service.
 - oauth2-proxy routes to the correct upstream based on the incoming hostname.
 
 ## CI/CD
