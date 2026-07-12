@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tesla-http-proxy
+  labels:
+    app: tesla-http-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tesla-http-proxy
+  template:
+    metadata:
+      labels:
+        app: tesla-http-proxy
+    spec:
+      containers:
+        - name: tesla-http-proxy
+          image: dockerhub.vshn.net/tesla/vehicle-command:0.4.1
+          command:
+            - tesla-http-proxy
+            - -tls-key
+            - /config/tls-key.pem
+            - -cert
+            - /config/tls-cert.pem
+            - -key-file
+            - /config/fleet-key.pem
+            - -port
+            - "4443"
+          ports:
+            - containerPort: 4443
+              name: https
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: tesla-http-proxy
