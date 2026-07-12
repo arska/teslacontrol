@@ -8,7 +8,7 @@ spec:
     insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
-    name: oauth2-proxy
+    name: oauth2-proxy-teslamate
     weight: 100
   port:
     targetPort: http
