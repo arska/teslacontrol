@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evcc
+  labels:
+    app: evcc
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: evcc
+  template:
+    metadata:
+      labels:
+        app: evcc
+    spec:
+      containers:
+        - name: evcc
+          image: dockerhub.vshn.net/evcc/evcc:latest
+          ports:
+            - containerPort: 7070
+              name: http
+          volumeMounts:
+            - name: data
+              mountPath: /root/.evcc
+            - name: config
+              mountPath: /etc/evcc.yaml
+              subPath: evcc.yaml
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: evcc-data
+        - name: config
+          configMap:
+            name: evcc-config
