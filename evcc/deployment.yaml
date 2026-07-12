@@ -34,5 +34,5 @@ spec:
           persistentVolumeClaim:
             claimName: evcc-data
         - name: config
-          configMap:
-            name: evcc-config
+          secret:
+            secretName: evcc
