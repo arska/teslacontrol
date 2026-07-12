@@ -49,3 +49,6 @@ jobs:
 
       - name: Apply oauth2-proxy
         run: oc apply -f oauth2-proxy/
+
+      - name: Apply monitoring
+        run: oc apply -f monitoring/

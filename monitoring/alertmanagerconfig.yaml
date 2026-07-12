@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1beta1
+kind: AlertmanagerConfig
+metadata:
+  name: teslacontrol-alerts
+spec:
+  route:
+    receiver: telegram
+    groupBy:
+      - alertname
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+  receivers:
+    - name: telegram
+      telegramConfigs:
+        - apiURL: https://api.telegram.org
+          botToken:
+            key: token
+            name: telegram-bot
+          chatID: 0
+          parseMode: HTML
+          sendResolved: true

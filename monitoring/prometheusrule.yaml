@@ -1,0 +1,36 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: teslacontrol-alerts
+spec:
+  groups:
+    - name: teslacontrol
+      rules:
+        - alert: PodNotReady
+          expr: |
+            kube_pod_status_ready{condition="true", namespace="arska-teslacontrol"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} is not ready"
+            description: "Pod {{ $labels.pod }} has been in a non-ready state for more than 5 minutes."
+        - alert: PodRestarting
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="arska-teslacontrol"}[1h]) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} is restarting frequently"
+            description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last hour."
+        - alert: PVCAlmostFull
+          expr: |
+            kubelet_volume_stats_available_bytes{namespace="arska-teslacontrol"}
+            / kubelet_volume_stats_capacity_bytes{namespace="arska-teslacontrol"} < 0.1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PVC {{ $labels.persistentvolumeclaim }} is almost full"
+            description: "PVC {{ $labels.persistentvolumeclaim }} has less than 10% space remaining."
