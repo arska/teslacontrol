@@ -1,0 +1,51 @@
+name: Deploy to APPUiO Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install sops
+        uses: mdgreenwald/mozilla-sops-action@v1
+
+      - name: Install age
+        run: |
+          curl -sSfLo age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-amd64.tar.gz
+          tar -xzf age.tar.gz
+          sudo mv age/age /usr/local/bin/
+          sudo mv age/age-keygen /usr/local/bin/
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "4"
+
+      - name: Login to APPUiO Cloud
+        run: oc login --server=https://api.exoscale-ch-gva-2-0.appuio.cloud:6443 --token=${{ secrets.APPUIO_TOKEN }}
+
+      - name: Decrypt secrets
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          for f in $(find . -name '*.sops.yaml'); do
+            sops -d -i "$f"
+          done
+
+      - name: Apply tesla-http-proxy
+        run: oc apply -f tesla-http-proxy/
+
+      - name: Apply teslamate
+        run: oc apply -f teslamate/
+
+      - name: Apply evcc
+        run: oc apply -f evcc/
+
+      - name: Apply oauth2-proxy
+        run: oc apply -f oauth2-proxy/
