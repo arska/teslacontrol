@@ -1,0 +1,17 @@
+apiVersion: vshn.appcat.vshn.io/v1
+kind: VSHNPostgreSQL
+metadata:
+  name: teslamate-db
+spec:
+  parameters:
+    service:
+      majorVersion: "17"
+      serviceLevel: besteffort
+    size:
+      plan: standard-2
+    backup:
+      enabled: true
+      schedule: "0 2 * * *"
+      retention: 6
+  writeConnectionSecretToRef:
+    name: teslamate-db-credentials

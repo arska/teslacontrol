@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teslamate
+  labels:
+    app: teslamate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teslamate
+  template:
+    metadata:
+      labels:
+        app: teslamate
+    spec:
+      containers:
+        - name: teslamate
+          image: dockerhub.vshn.net/teslamate/teslamate:latest
+          ports:
+            - containerPort: 4000
+              name: http
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: teslamate-db-credentials
+                  key: POSTGRESQL_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: teslamate-db-credentials
+                  key: POSTGRESQL_PORT
+            - name: DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: teslamate-db-credentials
+                  key: POSTGRESQL_DB
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: teslamate-db-credentials
+                  key: POSTGRESQL_USER
+            - name: DATABASE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: teslamate-db-credentials
+                  key: POSTGRESQL_PASSWORD
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teslamate
+                  key: encryption-key
+            - name: DISABLE_MQTT
+              value: "true"
