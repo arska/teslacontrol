@@ -50,5 +50,8 @@ jobs:
       - name: Apply oauth2-proxy
         run: oc apply -f oauth2-proxy/
 
+      - name: Apply tesla-public-key
+        run: oc apply -f tesla-public-key/
+
       - name: Apply monitoring
         run: oc apply -f monitoring/
