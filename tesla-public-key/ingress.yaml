@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tesla-public-key
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  rules:
+    - host: evcc.aukia.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: /.well-known
+            backend:
+              service:
+                name: tesla-public-key
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - evcc.aukia.com
+      secretName: evcc-tls
