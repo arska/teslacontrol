@@ -28,7 +28,9 @@ jobs:
           oc: "4"
 
       - name: Login to APPUiO Cloud
-        run: oc login --server=https://api.exoscale-ch-gva-2-0.appuio.cloud:6443 --token=${{ secrets.APPUIO_TOKEN }}
+        run: |
+          oc login --server=https://api.exoscale-ch-gva-2-0.appuio.cloud:6443 --token=${{ secrets.APPUIO_TOKEN }}
+          oc project arska-teslacontrol
 
       - name: Decrypt secrets
         env:
