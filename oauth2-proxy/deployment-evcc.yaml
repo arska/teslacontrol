@@ -24,7 +24,6 @@ spec:
             - --reverse-proxy=true
             - --email-domain=*
             - --authenticated-emails-file=/config/authenticated-emails
-            - --skip-auth-regex=^/oauth
           ports:
             - containerPort: 4180
               name: http
