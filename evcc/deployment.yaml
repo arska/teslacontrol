@@ -19,12 +19,15 @@ spec:
       containers:
         - name: evcc
           image: dockerhub.vshn.net/evcc/evcc:latest
+          env:
+            - name: HOME
+              value: /home/evcc
           ports:
             - containerPort: 7070
               name: http
           volumeMounts:
             - name: data
-              mountPath: /root/.evcc
+              mountPath: /home/evcc/.evcc
             - name: config
               mountPath: /etc/evcc.yaml
               subPath: evcc.yaml
