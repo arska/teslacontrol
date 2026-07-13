@@ -4,24 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-GitOps repository deploying evcc (EV charging), teslamate (Tesla data logging), tesla-http-proxy (Fleet API gateway), and oauth2-proxy (Google OAuth) to APPUiO Cloud (shared OpenShift). Service name: **WattLens**.
+GitOps repository deploying evcc (EV charging), teslamate (Tesla data logging), and oauth2-proxy (Google OAuth) to APPUiO Cloud (shared OpenShift). Service name: **WattLens**.
 
 ## Architecture
 
 Plain Kubernetes/OpenShift manifests in per-app directories. No Helm, no Kustomize. GitHub Actions decrypts SOPS secrets and runs `oc apply` on push to main.
 
-- **tesla-http-proxy**: shared Fleet API proxy for signed vehicle commands (cluster-internal only)
 - **evcc**: charging control with SQLite on PVC, web UI exposed via oauth2-proxy
 - **teslamate**: data logging with managed VSHNPostgreSQL, web UI exposed via oauth2-proxy
 - **oauth2-proxy**: two instances (one per app) sharing Google OAuth credentials
-- **tesla-public-key**: nginx serving the Fleet API public key at `/.well-known/appspecific/com.tesla.3p.public-key.pem`
 - **monitoring**: PrometheusRule + AlertmanagerConfig with Telegram alerts
 
 ## Deployment Environment
 
 - **Cluster**: APPUiO Cloud (shared OpenShift)
 - **Namespace**: `arska-teslacontrol`
-- **Custom domains**: `evcc.aukia.com`, `teslamate.aukia.com`, `fleet.aukia.com`
+- **Custom domains**: `evcc.aukia.com`, `teslamate.aukia.com`
 - DNS CNAMEs point to `cname.exoscale-ch-gva-2-0.appuio.cloud`
 
 ## Ingress and TLS
@@ -54,11 +52,9 @@ Automatic on push to main via GitHub Actions. Manual:
 oc login --server=https://api.exoscale-ch-gva-2-0.appuio.cloud:6443 --token=...
 oc project arska-teslacontrol
 for f in $(find . -name '*.sops.yaml' -not -name '.sops.yaml'); do sops -d -i "$f"; done
-oc apply -f tesla-http-proxy/
-oc apply -f teslamate/
 oc apply -f evcc/
+oc apply -f teslamate/
 oc apply -f oauth2-proxy/
-oc apply -f tesla-public-key/
 oc apply -f monitoring/
 ```
 
@@ -83,7 +79,8 @@ teslamate uses VSHNPostgreSQL (AppCat managed). The CRD auto-creates a `teslamat
 
 ## Tesla Fleet API
 
-Public key served at `https://fleet.aukia.com/.well-known/appspecific/com.tesla.3p.public-key.pem`. Tesla developer registration requires a domain that:
-- Does not contain the word "tesla"
-- Is not behind a reverse proxy (use a direct endpoint, not oauth2-proxy)
-- Is registered with a certificate authority (shared platform wildcard domains may be rejected)
+Pre-2021 Model S/X vehicles do not require a command proxy — commands go directly through Tesla's Fleet API using access/refresh tokens. No signed commands, no keypair, no domain registration needed.
+
+For newer vehicles (2021+ Model S/X, all Model 3/Y), a command proxy with registered keypair would be needed. This is not currently deployed.
+
+App registered via myteslamate.com (client-credentials grant). Tokens obtained via myteslamate's OAuth flow.

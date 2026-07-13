@@ -40,20 +40,14 @@ jobs:
             sops -d -i "$f"
           done
 
-      - name: Apply tesla-http-proxy
-        run: oc apply -f tesla-http-proxy/
+      - name: Apply evcc
+        run: oc apply -f evcc/
 
       - name: Apply teslamate
         run: oc apply -f teslamate/
 
-      - name: Apply evcc
-        run: oc apply -f evcc/
-
       - name: Apply oauth2-proxy
         run: oc apply -f oauth2-proxy/
-
-      - name: Apply tesla-public-key
-        run: oc apply -f tesla-public-key/
 
       - name: Apply monitoring
         run: oc apply -f monitoring/
