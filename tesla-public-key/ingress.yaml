@@ -6,11 +6,11 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
   rules:
-    - host: evcc.aukia.com
+    - host: fleet.aukia.com
       http:
         paths:
           - pathType: Prefix
-            path: /.well-known
+            path: /
             backend:
               service:
                 name: tesla-public-key
@@ -18,5 +18,5 @@ spec:
                   number: 8080
   tls:
     - hosts:
-        - evcc.aukia.com
-      secretName: evcc-tls
+        - fleet.aukia.com
+      secretName: fleet-tls
