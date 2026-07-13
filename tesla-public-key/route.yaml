@@ -2,6 +2,8 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: tesla-public-key
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
   host: evcc.aukia.com
   path: /.well-known

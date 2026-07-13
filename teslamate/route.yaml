@@ -2,6 +2,8 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: teslamate
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
   host: teslamate.aukia.com
   tls:
