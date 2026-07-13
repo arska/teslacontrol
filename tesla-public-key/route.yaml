@@ -3,6 +3,8 @@ kind: Route
 metadata:
   name: tesla-public-key
 spec:
+  host: evcc.aukia.com
+  path: /.well-known
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect

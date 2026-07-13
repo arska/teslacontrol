@@ -3,6 +3,7 @@ kind: Route
 metadata:
   name: teslamate
 spec:
+  host: teslamate.aukia.com
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect

@@ -3,6 +3,7 @@ kind: Route
 metadata:
   name: evcc
 spec:
+  host: evcc.aukia.com
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
