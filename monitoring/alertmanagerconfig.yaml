@@ -17,6 +17,6 @@ spec:
           botToken:
             key: token
             name: telegram-bot
-          chatID: 0
+          chatID: 1828500044
           parseMode: HTML
           sendResolved: true
