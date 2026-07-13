@@ -34,7 +34,7 @@ jobs:
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
-          for f in $(find . -name '*.sops.yaml'); do
+          for f in $(find . -name '*.sops.yaml' -not -name '.sops.yaml'); do
             sops -d -i "$f"
           done
 
