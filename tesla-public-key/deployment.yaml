@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: dockerhub.vshn.net/library/nginx:alpine
+          image: dockerhub.vshn.net/nginxinc/nginx-unprivileged:alpine
           ports:
             - containerPort: 8080
           volumeMounts:

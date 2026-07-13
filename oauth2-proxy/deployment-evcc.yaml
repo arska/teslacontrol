@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: oauth2-proxy
-          image: dockerhub.vshn.net/oauth2-proxy/oauth2-proxy:v7.9.0
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.8.0
           args:
             - --provider=google
             - --upstream=http://evcc:7070
