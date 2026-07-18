@@ -73,11 +73,16 @@ Use the correct regional endpoint:
 
 Use the **"Vehicle API-only charger"** template. This is needed when your charger has no API (e.g., Tesla Gen1 Wall Connector, or any "dumb" charger). evcc controls charging via the Tesla vehicle API (start/stop charging, set amps) rather than through the charger's protocol.
 
-### Polling
+### Polling and Scheduled Charging Workaround
 
-evcc polls the car API every hour by default when using the Vehicle API charger. This means:
-- Up to 1 hour delay before evcc detects the car is plugged in
-- Workaround: set the car's built-in scheduled charging to a late time (e.g., 06:00) as a fallback, and let evcc start charging earlier during cheap hours
+By default, the car starts charging immediately when plugged in. evcc detects this and stops the charging if it's not a cheap hour and there's no solar surplus. However, pre-2021 vehicles don't support streaming — only polling. evcc recommends polling no more frequently than every hour (more frequent polling can drain the 12V battery and risk Tesla API rate limits). This means the car could charge for up to 1 hour at expensive rates before evcc notices and stops it.
+
+**Workaround:** Set the car's built-in scheduled charging to **06:00** (or similar). This prevents the car from charging immediately when plugged in. evcc detects the car is connected (but not charging) within an hour, then plans and starts charging during the cheapest Nord Pool hours overnight. By 06:00 when the car's own schedule kicks in, the battery is usually already at the target SOC and no additional charging occurs.
+
+This approach gives you:
+- No expensive charging when you plug in during peak hours
+- evcc optimizes for the cheapest overnight slots
+- The car's 06:00 schedule acts as a safety net if evcc fails
 
 ## Step 4: Configure teslamate
 
