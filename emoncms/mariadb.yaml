@@ -14,6 +14,7 @@ spec:
     backup:
       enabled: true
       schedule: "0 3 * * *"
-      retention: 6
+      retention:
+        keepDaily: 6
   writeConnectionSecretToRef:
     name: emoncms-db-credentials
