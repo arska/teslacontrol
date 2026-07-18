@@ -22,7 +22,7 @@ RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf && \
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
 # Clone emoncms and modules
-ARG EMONCMS_VERSION=master
+ARG EMONCMS_VERSION=11.15.15
 RUN git clone --depth 1 --branch ${EMONCMS_VERSION} https://github.com/emoncms/emoncms.git /var/www/html && \
     git clone --depth 1 https://github.com/emoncms/graph.git /var/www/html/Modules/graph && \
     git clone --depth 1 https://github.com/emoncms/dashboard.git /var/www/html/Modules/dashboard && \
