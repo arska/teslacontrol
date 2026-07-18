@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy-emoncms
+  labels:
+    app: oauth2-proxy-emoncms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy-emoncms
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy-emoncms
+    spec:
+      containers:
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.8.0
+          args:
+            - --provider=google
+            - --upstream=http://emoncms:8080
+            - --http-address=0.0.0.0:4180
+            - --reverse-proxy=true
+            - --email-domain=*
+            - --authenticated-emails-file=/config/authenticated-emails
+            - --skip-auth-route=GET=^/input/
+            - --skip-auth-route=POST=^/input/
+            - --skip-auth-route=GET=^/feed/
+          ports:
+            - containerPort: 4180
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 4180
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 4180
+            periodSeconds: 10
+          envFrom:
+            - secretRef:
+                name: oauth2-proxy
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: oauth2-proxy-emails

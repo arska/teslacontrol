@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emoncms
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  rules:
+    - host: emoncms.aukia.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: oauth2-proxy-emoncms
+                port:
+                  number: 4180
+  tls:
+    - hosts:
+        - emoncms.aukia.com
+      secretName: emoncms-tls
