@@ -118,7 +118,9 @@ Enter the access and refresh tokens via the teslamate web UI at `/sign_in`.
 
 ### Streaming API
 
-teslamate 4.0.1 has a known bug where the streaming API tokens expire in a loop ([teslamate-org/teslamate#5428](https://github.com/teslamate-org/teslamate/issues/5428)). Data collection via polling still works — the streaming errors are noisy but non-blocking.
+Pre-2021 vehicles don't support the new streaming protocol. teslamate 4.0.1 has a known bug where it tries to connect to the streaming API in a loop, causing "Streaming API: Tokens expired" errors every few seconds ([teslamate-org/teslamate#5428](https://github.com/teslamate-org/teslamate/issues/5428)).
+
+**Fix:** After adding the car in teslamate's web UI, go to the vehicle settings and **disable streaming**. Data collection via polling still works fine — streaming is just noisy and wastes resources on pre-2021 vehicles.
 
 ## What You Don't Need (Pre-2021 Vehicles)
 
