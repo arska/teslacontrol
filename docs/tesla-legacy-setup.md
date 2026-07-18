@@ -12,23 +12,18 @@ This guide documents the setup for evcc and teslamate with a 2015 Model S 85D on
 
 ## Step 1: Register a Tesla Developer App
 
+Follow the [myteslamate.com](https://app.myteslamate.com) instructions to register your Tesla Developer App. Their guided flow handles the domain registration and OAuth setup:
+
 1. Go to [developer.tesla.com](https://developer.tesla.com) and sign in
 2. Create a new Fleet API application
-3. When asked for OAuth Grant Type, select **"Machine to Machine only"** (client-credentials)
-   - The "Authorization Code" option requires registering allowed origin URLs
-   - Tesla's developer portal rejects domains behind reverse proxies (detects load balancer cookies, shared platform hostnames, etc.)
-   - Machine-to-machine skips domain validation entirely
+3. When asked for client details, use the URLs provided by myteslamate.com:
+   - Allowed Origin: `https://app-<ID>.myteslamate.com/`
+   - Redirect URI: `https://app.myteslamate.com/auth/tesla/user/callback`
+   - Return URL: `https://app.myteslamate.com/`
 4. Select all API scopes (Vehicle Information, Location, Commands, Charging Management, Energy)
 5. Save the **Client ID** and **Client Secret**
 
-### Domain Registration Gotchas
-
-If you need Authorization Code flow (not needed for personal use):
-- Tesla rejects domains containing the word "tesla" in the URL
-- Tesla rejects domains behind reverse proxies (checks for load balancer cookies like OpenShift's HAProxy session cookie)
-- Tesla rejects shared platform wildcard domains (e.g., `*.apps.appuio.cloud`)
-- Cloudflare-fronted domains are accepted (e.g., myteslamate.com uses Cloudflare)
-- The public key must be hosted at `https://<domain>/.well-known/appspecific/com.tesla.3p.public-key.pem`
+Registering your own domain directly with Tesla's developer portal is very difficult — Tesla rejects domains containing "tesla", domains behind reverse proxies (it detects load balancer cookies like OpenShift's HAProxy session cookie), and shared platform wildcard domains. The myteslamate.com URLs (behind Cloudflare) are accepted without issues.
 
 ## Step 2: Register via myteslamate.com
 
