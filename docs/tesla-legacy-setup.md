@@ -71,7 +71,7 @@ Use the correct regional endpoint:
 
 ### Charger Configuration
 
-Use the **"Vehicle API-only charger"** template — this controls charging via the Tesla vehicle API (start/stop charging, set amps) rather than through a physical charger's protocol.
+Use the **"Vehicle API-only charger"** template. This is needed when your charger has no API (e.g., Tesla Gen1 Wall Connector, or any "dumb" charger). evcc controls charging via the Tesla vehicle API (start/stop charging, set amps) rather than through the charger's protocol.
 
 ### Polling
 
