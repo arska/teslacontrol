@@ -6,6 +6,14 @@
   "registryAliases": {
     "dockerhub.vshn.net": "docker.io"
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["emoncms/docker/Dockerfile"],
+      "matchStrings": ["# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nARG \\w+=(?<currentValue>\\S+)"],
+      "extractVersionTemplate": "^(?<version>.+)$"
+    }
+  ],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
