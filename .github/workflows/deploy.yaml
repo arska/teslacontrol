@@ -52,5 +52,8 @@ jobs:
       - name: Apply grafana
         run: oc apply -f grafana/
 
+      - name: Apply emoncms
+        run: oc apply -f emoncms/
+
       - name: Apply monitoring
         run: oc apply -f monitoring/
