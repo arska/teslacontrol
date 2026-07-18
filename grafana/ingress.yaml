@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  rules:
+    - host: teslagrafana.aukia.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: oauth2-proxy-grafana
+                port:
+                  number: 4180
+  tls:
+    - hosts:
+        - teslagrafana.aukia.com
+      secretName: grafana-tls
