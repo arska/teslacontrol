@@ -5,7 +5,7 @@ set -e
 # Format: mysql://user:pass@host:port/dbname
 if [ -n "$MARIADB_URL" ]; then
   : "${MYSQL_HOST:=$(echo "$MARIADB_URL" | sed -E 's|.*@([^:]+):.*|\1|')}"
-  : "${MYSQL_PORT:=$(echo "$MARIADB_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')}"
+  : "${MYSQL_PORT:=$(echo "$MARIADB_URL" | sed -E 's|mysql://[^@]+@[^:]+:([0-9]+)/.*|\1|')}"
   : "${MYSQL_USER:=$(echo "$MARIADB_URL" | sed -E 's|.*://([^:]+):.*|\1|')}"
   : "${MYSQL_PASSWORD:=$(echo "$MARIADB_URL" | sed -E 's|.*://[^:]+:([^@]+)@.*|\1|')}"
   : "${MYSQL_DATABASE:=$(echo "$MARIADB_URL" | sed -E 's|.*/([^?]+).*|\1|')}"

@@ -19,6 +19,7 @@ spec:
       containers:
         - name: emoncms
           image: ghcr.io/arska/emoncms:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
