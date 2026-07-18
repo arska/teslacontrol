@@ -1,0 +1,19 @@
+apiVersion: vshn.appcat.vshn.io/v1
+kind: VSHNMariaDB
+metadata:
+  name: emoncms-db
+spec:
+  parameters:
+    service:
+      version: "11.8"
+    size:
+      plan: standard-2
+    security:
+      allowedNamespaces:
+        - arska-teslacontrol
+    backup:
+      enabled: true
+      schedule: "0 3 * * *"
+      retention: 6
+  writeConnectionSecretToRef:
+    name: emoncms-db-credentials
