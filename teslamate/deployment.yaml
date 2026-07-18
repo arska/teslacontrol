@@ -53,13 +53,19 @@ spec:
                   key: encryption-key
             - name: DISABLE_MQTT
               value: "true"
-            - name: TESLA_CLIENT_ID
+            - name: TESLA_AUTH_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: teslamate
                   key: tesla-client-id
-            - name: TESLA_CLIENT_SECRET
+            - name: TESLA_AUTH_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: teslamate
                   key: tesla-client-secret
+            - name: TESLA_API_HOST
+              value: "https://fleet-api.prd.eu.vn.cloud.tesla.com"
+            - name: TESLA_AUTH_HOST
+              value: "https://auth.tesla.com"
+            - name: TESLA_AUTH_PATH
+              value: "/oauth2/v3"
