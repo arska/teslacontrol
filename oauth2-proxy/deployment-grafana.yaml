@@ -27,6 +27,16 @@ spec:
           ports:
             - containerPort: 4180
               name: http
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 4180
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 4180
+            periodSeconds: 10
           envFrom:
             - secretRef:
                 name: oauth2-proxy

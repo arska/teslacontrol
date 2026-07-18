@@ -20,6 +20,18 @@ spec:
           ports:
             - containerPort: 4000
               name: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 10
           env:
             - name: DATABASE_HOST
               valueFrom:
