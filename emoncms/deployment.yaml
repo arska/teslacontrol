@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emoncms
+  labels:
+    app: emoncms
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: emoncms
+  template:
+    metadata:
+      labels:
+        app: emoncms
+    spec:
+      containers:
+        - name: emoncms
+          image: ghcr.io/arska/emoncms:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          env:
+            - name: MARIADB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: emoncms-db-credentials
+                  key: MARIADB_URL
+            - name: REDIS_ENABLED
+              value: "false"
+            - name: EMONCMS_DOMAIN
+              value: "emoncms.aukia.com"
+            - name: EMONCMS_LOG_LEVEL
+              value: "2"
+          volumeMounts:
+            - name: data
+              mountPath: /var/opt/emoncms
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: emoncms-data
