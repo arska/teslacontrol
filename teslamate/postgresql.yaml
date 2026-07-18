@@ -9,6 +9,9 @@ spec:
       serviceLevel: besteffort
     size:
       plan: standard-2
+    security:
+      allowedNamespaces:
+        - arska-teslacontrol
     backup:
       enabled: true
       schedule: "0 2 * * *"
