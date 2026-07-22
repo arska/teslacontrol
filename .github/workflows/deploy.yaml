@@ -51,7 +51,7 @@ jobs:
           with open('/tmp/evcc.yaml', 'w') as f:
               f.write(config)
           "
-          docker run --rm -v /tmp/evcc.yaml:/etc/evcc.yaml:ro dockerhub.vshn.net/evcc/evcc:latest checkconfig
+          docker run --rm -v /tmp/evcc.yaml:/etc/evcc.yaml:ro --entrypoint evcc dockerhub.vshn.net/evcc/evcc:latest checkconfig
 
       - name: Apply evcc
         run: oc apply -f evcc/
