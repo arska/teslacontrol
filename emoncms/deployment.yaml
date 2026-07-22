@@ -16,6 +16,18 @@ spec:
       labels:
         app: emoncms
     spec:
+      initContainers:
+        - name: create-database
+          image: dockerhub.vshn.net/library/mariadb:11
+          command:
+            - sh
+            - -c
+            - |
+              mariadb -h "$MARIADB_HOST" -P "$MARIADB_PORT" -u "$MARIADB_USERNAME" -p"$MARIADB_PASSWORD" \
+                -e "CREATE DATABASE IF NOT EXISTS emoncms;"
+          envFrom:
+            - secretRef:
+                name: emoncms-db-credentials
       containers:
         - name: emoncms
           image: ghcr.io/arska/emoncms:latest
@@ -36,11 +48,28 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
           env:
-            - name: MARIADB_URL
+            - name: MYSQL_HOST
               valueFrom:
                 secretKeyRef:
                   name: emoncms-db-credentials
-                  key: MARIADB_URL
+                  key: MARIADB_HOST
+            - name: MYSQL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: emoncms-db-credentials
+                  key: MARIADB_PORT
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: emoncms-db-credentials
+                  key: MARIADB_USERNAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: emoncms-db-credentials
+                  key: MARIADB_PASSWORD
+            - name: MYSQL_DATABASE
+              value: "emoncms"
             - name: REDIS_ENABLED
               value: "false"
             - name: EMONCMS_DOMAIN
