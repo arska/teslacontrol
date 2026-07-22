@@ -40,6 +40,19 @@ jobs:
             sops -d -i "$f"
           done
 
+      - name: Validate evcc config
+        run: |
+          # Extract evcc.yaml from the decrypted secret and validate it
+          python3 -c "
+          import yaml, sys
+          with open('evcc/secret.sops.yaml') as f:
+              secret = yaml.safe_load(f)
+          config = secret['stringData']['evcc.yaml']
+          with open('/tmp/evcc.yaml', 'w') as f:
+              f.write(config)
+          "
+          docker run --rm -v /tmp/evcc.yaml:/etc/evcc.yaml:ro dockerhub.vshn.net/evcc/evcc:latest checkconfig
+
       - name: Apply evcc
         run: oc apply -f evcc/
 
