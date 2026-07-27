@@ -26,7 +26,8 @@ kind: Ingress
 metadata:
   name: emoncms-api
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    route.openshift.io/termination: edge
+    haproxy.router.openshift.io/insecureEdgeTerminationPolicy: Allow
 spec:
   rules:
     - host: emoncms.aukia.com
