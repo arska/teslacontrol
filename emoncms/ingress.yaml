@@ -4,6 +4,7 @@ metadata:
   name: emoncms
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-production
+    haproxy.router.openshift.io/insecureEdgeTerminationPolicy: Allow
 spec:
   rules:
     - host: emoncms.aukia.com
