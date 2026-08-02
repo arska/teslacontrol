@@ -68,5 +68,13 @@ jobs:
       - name: Apply emoncms
         run: oc apply -f emoncms/
 
+      - name: Allow HTTP on emoncms API routes
+        run: |
+          # OpenShift auto-creates routes from ingresses with Redirect policy.
+          # IoTaWatt can't do HTTPS, so patch /input and /feed routes to Allow HTTP.
+          for route in $(oc get routes -o name | grep emoncms-api); do
+            oc patch "$route" -p '{"spec":{"tls":{"insecureEdgeTerminationPolicy":"Allow"}}}'
+          done
+
       - name: Apply monitoring
         run: oc apply -f monitoring/
