@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-GitOps repository deploying evcc (EV charging), teslamate (Tesla data logging), and oauth2-proxy (Google OAuth) to APPUiO Cloud (shared OpenShift). Service name: **WattLens**.
+GitOps repository deploying evcc (EV charging), teslamate (Tesla data logging), emoncms (energy monitoring), and oauth2-proxy (Google OAuth) to APPUiO Cloud (shared OpenShift). Service name: **WattLens**.
 
 ## Architecture
 
@@ -12,14 +12,15 @@ Plain Kubernetes/OpenShift manifests in per-app directories. No Helm, no Kustomi
 
 - **evcc**: charging control with SQLite on PVC, web UI exposed via oauth2-proxy
 - **teslamate**: data logging with managed VSHNPostgreSQL, web UI exposed via oauth2-proxy
-- **oauth2-proxy**: two instances (one per app) sharing Google OAuth credentials
+- **emoncms**: energy monitoring receiving IoTaWatt data, custom rootless Docker image on GHCR, VSHNMariaDB for metadata, PVC for PHPFina feed data
+- **oauth2-proxy**: instances per app sharing Google OAuth credentials
 - **monitoring**: PrometheusRule + AlertmanagerConfig with Telegram alerts
 
 ## Deployment Environment
 
 - **Cluster**: APPUiO Cloud (shared OpenShift)
 - **Namespace**: `arska-teslacontrol`
-- **Custom domains**: `evcc.aukia.com`, `teslamate.aukia.com`
+- **Custom domains**: `evcc.aukia.com`, `teslamate.aukia.com`, `emoncms.aukia.com`
 - DNS CNAMEs point to `cname.exoscale-ch-gva-2-0.appuio.cloud`
 
 ## Ingress and TLS
@@ -33,6 +34,7 @@ Annotate with `cert-manager.io/cluster-issuer: letsencrypt-production` for autom
 Containers run as **non-root**. Key implications:
 - nginx: use `nginxinc/nginx-unprivileged` (not `nginx:alpine`)
 - evcc: set `HOME=/home/evcc` env var and mount PVC at `/home/evcc/.evcc` (not `/root/.evcc`)
+- emoncms: custom rootless Dockerfile (`emoncms/docker/`), Apache on port 8080, `chgrp -R 0` + `chmod -R g=u` for arbitrary UID
 - Ports must be >= 1024
 
 ## Secrets
@@ -55,18 +57,23 @@ for f in $(find . -name '*.sops.yaml' -not -name '.sops.yaml'); do sops -d -i "$
 oc apply -f evcc/
 oc apply -f teslamate/
 oc apply -f oauth2-proxy/
+oc apply -f emoncms/
 oc apply -f monitoring/
+# Patch emoncms API routes to allow HTTP (IoTaWatt can't do HTTPS)
+for route in $(oc get routes -o name | grep emoncms-api); do
+  oc patch "$route" -p '{"spec":{"tls":{"insecureEdgeTerminationPolicy":"Allow"}}}'
+done
 ```
 
-Note: `oc apply` does not update `spec.host` on existing Routes/Ingress. To change hostnames, delete and recreate.
+Note: `oc apply` does not update `spec.host` on existing Routes/Ingress. To change hostnames, delete and recreate. OpenShift auto-creates Routes from Ingresses — the `insecureEdgeTerminationPolicy` annotation on Ingresses is ignored, so API routes must be patched after apply.
 
 ## Docker Images
 
-Most images use `dockerhub.vshn.net` proxy prefix to bypass Docker Hub pull limits. Exception: oauth2-proxy uses `quay.io/oauth2-proxy/oauth2-proxy` (not on Docker Hub).
+Most images use `dockerhub.vshn.net` proxy prefix to bypass Docker Hub pull limits. Exceptions: oauth2-proxy uses `quay.io/oauth2-proxy/oauth2-proxy` (not on Docker Hub), emoncms uses `ghcr.io/arska/emoncms` (custom-built, pushed by `.github/workflows/build-emoncms.yaml`).
 
 ## Renovate
 
-Configured for auto-merging minor and patch updates, plus GitHub Actions updates. Uses `registryAliases` mapping `dockerhub.vshn.net` to `docker.io`.
+Configured for auto-merging minor and patch updates, plus GitHub Actions updates. Uses `registryAliases` mapping `dockerhub.vshn.net` to `docker.io`. Custom regex manager tracks `emoncms/emoncms` GitHub tags for the `EMONCMS_VERSION` ARG in the Dockerfile.
 
 ## Telegram
 
@@ -75,7 +82,8 @@ Configured for auto-merging minor and patch updates, plus GitHub Actions updates
 
 ## Database
 
-teslamate uses VSHNPostgreSQL (AppCat managed). The CRD auto-creates a `teslamate-db-credentials` Secret with connection details. No manual DB credential management. Deletion protection is enabled by default — must be disabled before deleting the instance.
+- **teslamate**: VSHNPostgreSQL (AppCat managed). CRD auto-creates `teslamate-db-credentials` Secret. Deletion protection enabled by default.
+- **emoncms**: VSHNMariaDB (AppCat managed). CRD auto-creates `emoncms-db-credentials` Secret. Note: the AppCat secret has no database name — the deployment maps individual keys (`MARIADB_HOST`, `MARIADB_PORT`, `MARIADB_USERNAME`, `MARIADB_PASSWORD`) and an init container creates the `emoncms` database on startup.
 
 ## Tesla Fleet API
 
