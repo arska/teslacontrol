@@ -23,6 +23,12 @@ data:
           preferred_ip_protocol: ip4
           fail_if_body_matches_regexp:
             - "(?i)(fatal error|uncaught [a-z_]*exception|mysqli_sql_exception)"
+      # Plain TCP connect, for services that speak no HTTP (redis).
+      tcp_connect:
+        prober: tcp
+        timeout: 5s
+        tcp:
+          preferred_ip_protocol: ip4
       # Public URL probe: DNS, TLS, ingress and oauth2-proxy. An unauthenticated
       # request never reaches the app, so a 403 from oauth2-proxy (or a 302 to
       # Google) is the healthy answer. This proves the public path is intact;
@@ -64,7 +70,7 @@ spec:
               mountPath: /etc/blackbox
           resources:
             requests:
-              cpu: 10m
+              cpu: 5m
               memory: 32Mi
             limits:
               memory: 64Mi
