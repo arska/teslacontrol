@@ -95,7 +95,7 @@ Alerting rules live in `monitoring/prometheusrule.yaml` and route to Telegram vi
 
 **Probe apps from outside, not from status codes alone.** emoncms answers HTTP 200 with a PHP fatal error in the body when its database is unreachable, so a status-code check reports a dead app as healthy. The `http_php` blackbox module adds `fail_if_body_matches_regexp`. Internal probes (`http://<svc>.arska-teslacontrol.svc.cluster.local:<port>/`) test the app itself and bypass oauth2-proxy; public probes test DNS, TLS and ingress, where an unauthenticated 403 from oauth2-proxy is the healthy answer.
 
-**Blackbox metrics are reliable, platform metrics may not be.** User-workload monitoring scrapes our own workloads, so the blackbox exporter's series are always available to our rules. Whether `kube_pod_status_ready` and `kubelet_volume_stats_*` reach user-workload Prometheus on APPUiO is unconfirmed; the `PlatformMetricsUnavailable` alert exists to answer that. If it fires, the pod and PVC alerts in that file are dead and need rebuilding on probes.
+**Two Prometheus instances evaluate our alerts.** Rules in `monitoring/prometheusrule.yaml` run in `openshift-user-workload-monitoring/user-workload`; AppCat's instance-namespace rules run in `openshift-monitoring/k8s`. Both route to our Telegram. `kube_pod_status_ready` and `kubelet_volume_stats_*` were confirmed present in user-workload monitoring on 2026-08-24, so the pod and PVC rules do work for resources in `arska-teslacontrol`. `PlatformMetricsUnavailable` is the canary that catches it if that ever stops being true, because the failure mode is silence rather than an error.
 
 ## Tesla Fleet API
 
