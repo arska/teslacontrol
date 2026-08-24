@@ -1,0 +1,25 @@
+# Grants the CI service account permission to manage Probe objects.
+#
+# APPUiO binds ClusterRole monitoring-edit-probe to the vshn group only, and
+# monitoring-edit (which ci-deploy already has) does not cover probes. Without
+# this, "oc apply -f monitoring/" fails on monitoring/probe.yaml and takes the
+# whole monitoring step down with it.
+#
+# CI cannot apply this itself: RBAC escalation prevention stops an account from
+# granting permissions it does not hold. A human with the verbs applies it once,
+# which is why this lives outside any directory the deploy applies:
+#
+#   oc apply -f rbac/
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deploy-monitoring-edit-probe
+  namespace: arska-teslacontrol
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-edit-probe
+subjects:
+  - kind: ServiceAccount
+    name: ci-deploy
+    namespace: arska-teslacontrol

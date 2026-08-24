@@ -46,6 +46,22 @@ Encrypted with SOPS + age. Private key in `age-key.txt` (gitignored).
 - Only `data` and `stringData` fields are encrypted (configured in `.sops.yaml`)
 - evcc config (`evcc.yaml`) lives inside `evcc/secret.sops.yaml` (not a ConfigMap) because it contains the Telegram bot token
 
+## RBAC
+
+`rbac/` is applied by a human, never by CI:
+
+```bash
+oc apply -f rbac/
+```
+
+APPUiO binds ClusterRole `monitoring-edit-probe` to the `vshn` group only, and the `monitoring-edit` that `ci-deploy` holds does not cover `probes`. Without the binding in `rbac/`, `oc apply -f monitoring/` fails on `probe.yaml` and takes the whole monitoring step with it. CI cannot apply it itself: RBAC escalation prevention stops an account granting permissions it does not hold, which is why it sits outside every directory the deploy touches.
+
+Verify a permission as the identity that will use it, not as yourself:
+
+```bash
+oc apply -f monitoring/ --dry-run=server --as=system:serviceaccount:arska-teslacontrol:ci-deploy
+```
+
 ## Deploy
 
 Automatic on push to main via GitHub Actions. Manual:
