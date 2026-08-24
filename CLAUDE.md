@@ -14,7 +14,7 @@ Plain Kubernetes/OpenShift manifests in per-app directories. No Helm, no Kustomi
 - **teslamate**: data logging with managed VSHNPostgreSQL, web UI exposed via oauth2-proxy
 - **emoncms**: energy monitoring receiving IoTaWatt data, custom rootless Docker image on GHCR, VSHNMariaDB for metadata, PVC for PHPFina feed data
 - **oauth2-proxy**: instances per app sharing Google OAuth credentials
-- **monitoring**: PrometheusRule + AlertmanagerConfig with Telegram alerts
+- **monitoring**: PrometheusRule + AlertmanagerConfig with Telegram alerts, plus a blackbox exporter probing every app (`monitoring/blackbox-exporter.yaml`, `monitoring/probe.yaml`)
 
 ## Deployment Environment
 
@@ -84,6 +84,18 @@ Configured for auto-merging minor and patch updates, plus GitHub Actions updates
 
 - **teslamate**: VSHNPostgreSQL (AppCat managed). CRD auto-creates `teslamate-db-credentials` Secret. Deletion protection enabled by default.
 - **emoncms**: VSHNMariaDB (AppCat managed). CRD auto-creates `emoncms-db-credentials` Secret. Note: the AppCat secret has no database name — the deployment maps individual keys (`MARIADB_HOST`, `MARIADB_PORT`, `MARIADB_USERNAME`, `MARIADB_PASSWORD`) and an init container creates the `emoncms` database on startup.
+
+**Disk sizing**: every AppCat plan (`standard-512m` through `standard-8`) ships the same 16Gi disk. The plan only scales CPU and memory. Set `spec.parameters.size.disk` explicitly. AppCat allows increasing disk, never decreasing.
+
+**Alerting**: the database pods and PVCs run in a VSHN-managed instance namespace, not `arska-teslacontrol`, so `monitoring/prometheusrule.yaml` cannot see them. AppCat generates its own `PersistentVolumeFillingUp` / `PersistentVolumeExpectedToFillUp` / `MemoryCritical` rules in that namespace, but they only reach us if `spec.parameters.monitoring.alertmanagerConfigRef` + `alertmanagerConfigSecretRef` name an AlertmanagerConfig and Secret in our namespace for AppCat to copy over.
+
+## Monitoring
+
+Alerting rules live in `monitoring/prometheusrule.yaml` and route to Telegram via `monitoring/alertmanagerconfig.yaml`.
+
+**Probe apps from outside, not from status codes alone.** emoncms answers HTTP 200 with a PHP fatal error in the body when its database is unreachable, so a status-code check reports a dead app as healthy. The `http_php` blackbox module adds `fail_if_body_matches_regexp`. Internal probes (`http://<svc>.arska-teslacontrol.svc.cluster.local:<port>/`) test the app itself and bypass oauth2-proxy; public probes test DNS, TLS and ingress, where an unauthenticated 403 from oauth2-proxy is the healthy answer.
+
+**Blackbox metrics are reliable, platform metrics may not be.** User-workload monitoring scrapes our own workloads, so the blackbox exporter's series are always available to our rules. Whether `kube_pod_status_ready` and `kubelet_volume_stats_*` reach user-workload Prometheus on APPUiO is unconfirmed; the `PlatformMetricsUnavailable` alert exists to answer that. If it fires, the pod and PVC alerts in that file are dead and need rebuilding on probes.
 
 ## Tesla Fleet API
 

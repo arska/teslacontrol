@@ -1,0 +1,55 @@
+# Blackbox probes. These run against our own exporter in our own namespace, so
+# the resulting metrics land in user-workload monitoring, where our
+# PrometheusRule can actually read them.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: apps-internal
+spec:
+  interval: 60s
+  module: http_app
+  prober:
+    url: blackbox-exporter.arska-teslacontrol.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - http://evcc.arska-teslacontrol.svc.cluster.local:7070/
+        - http://teslamate.arska-teslacontrol.svc.cluster.local:4000/
+        - http://grafana.arska-teslacontrol.svc.cluster.local:3000/
+      labels:
+        scope: internal
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: emoncms-internal
+spec:
+  interval: 60s
+  module: http_php
+  prober:
+    url: blackbox-exporter.arska-teslacontrol.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - http://emoncms.arska-teslacontrol.svc.cluster.local:8080/
+      labels:
+        scope: internal
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: apps-public
+spec:
+  interval: 60s
+  module: http_public
+  prober:
+    url: blackbox-exporter.arska-teslacontrol.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://evcc.aukia.com/
+        - https://teslamate.aukia.com/
+        - https://emoncms.aukia.com/
+        - https://teslagrafana.aukia.com/
+      labels:
+        scope: public

@@ -34,3 +34,61 @@ spec:
           annotations:
             summary: "PVC {{ $labels.persistentvolumeclaim }} is almost full"
             description: "PVC {{ $labels.persistentvolumeclaim }} has less than 10% space remaining."
+        - alert: PVCExpectedToFillUp
+          expr: |
+            (
+              kubelet_volume_stats_available_bytes{namespace="arska-teslacontrol"}
+              / kubelet_volume_stats_capacity_bytes{namespace="arska-teslacontrol"} < 0.25
+            )
+            and
+            predict_linear(
+              kubelet_volume_stats_available_bytes{namespace="arska-teslacontrol"}[6h],
+              4 * 24 * 3600
+            ) < 0
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC {{ $labels.persistentvolumeclaim }} is expected to fill up"
+            description: "PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} free and, at the current rate, is expected to fill up within four days."
+        - alert: ProbeFailed
+          expr: |
+            probe_success == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.instance }} is failing its blackbox probe"
+            description: "The {{ $labels.scope }} probe for {{ $labels.instance }} has been failing for more than 5 minutes. For emoncms this also fires when the app answers 200 with a PHP fatal error, which is what a dead database looks like from outside."
+        - alert: ProbeNotRunning
+          expr: |
+            absent(probe_success{scope="internal"}) or absent(probe_success{scope="public"})
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Blackbox probes are not reporting"
+            description: "No probe_success samples for one of the probe scopes. The blackbox exporter or its scrape is broken, so app outages would go unnoticed."
+        - alert: ProbeCertExpiringSoon
+          expr: |
+            probe_ssl_earliest_cert_expiry - time() < 14 * 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "TLS certificate for {{ $labels.instance }} expires soon"
+            description: "The certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}. cert-manager should have renewed it by now."
+        # Diagnostic. User-workload monitoring scrapes only our own workloads, so
+        # it may not carry kube-state-metrics or kubelet series at all. If this
+        # fires, PodNotReady, PodRestarting, PVCAlmostFull and PVCExpectedToFillUp
+        # above can never fire and must be rebuilt on blackbox probes instead.
+        - alert: PlatformMetricsUnavailable
+          expr: |
+            absent(kube_pod_status_ready{namespace="arska-teslacontrol"})
+            or absent(kubelet_volume_stats_capacity_bytes{namespace="arska-teslacontrol"})
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Platform metrics are not visible to our alerting rules"
+            description: "kube_pod_status_ready or kubelet_volume_stats_capacity_bytes returned no data. Every pod and PVC alert in this rule file is silently dead."
