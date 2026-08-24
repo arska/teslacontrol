@@ -53,3 +53,19 @@ spec:
         - https://teslagrafana.aukia.com/
       labels:
         scope: public
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: redis-internal
+spec:
+  interval: 60s
+  module: tcp_connect
+  prober:
+    url: blackbox-exporter.arska-teslacontrol.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - redis.arska-teslacontrol.svc.cluster.local:6379
+      labels:
+        scope: internal

@@ -89,6 +89,14 @@ Configured for auto-merging minor and patch updates, plus GitHub Actions updates
 
 **Alerting**: the database pods and PVCs run in a VSHN-managed instance namespace, not `arska-teslacontrol`, so `monitoring/prometheusrule.yaml` cannot see them. AppCat generates its own `PersistentVolumeFillingUp` / `PersistentVolumeExpectedToFillUp` / `MemoryCritical` rules in that namespace, but they only reach us if `spec.parameters.monitoring.alertmanagerConfigRef` + `alertmanagerConfigSecretRef` name an AlertmanagerConfig and Secret in our namespace for AppCat to copy over.
 
+## Redis
+
+emoncms uses Redis as a cache for feed last-values. Without it, `set_timevalue()` in `Modules/feed/feed_model.php` writes `UPDATE feeds SET time = ?, value = ? WHERE id = ?` to MariaDB on every sample, one autocommit transaction each. That produced ~200 MB/day of binary log against 3.6 MB of actual data and filled the database disk on 2026-08-21.
+
+Nothing in Redis needs to survive a restart: the time series lives in PHPFina on the emoncms PVC. Persistence is off, so the container never writes to disk and needs no PVC and no writable filesystem under an arbitrary OpenShift UID.
+
+**`REDIS_PORT` must be set explicitly on the emoncms Deployment.** The Service named `redis` makes Kubernetes inject `REDIS_PORT=tcp://<clusterIP>:6379` into every pod in the namespace. That shadows the entrypoint's `: "${REDIS_PORT:=6379}"` default, so `settings.ini` gets `port = tcp://172.30.x.x:6379` and Redis silently goes unused while emoncms keeps answering HTTP 200. Check `redis-cli dbsize` after any change here; a healthy instance holds `emoncmsfeed:*`, `emoncmsinput:*` and `emoncmsinput:lastvalue:*` keys.
+
 ## Monitoring
 
 Alerting rules live in `monitoring/prometheusrule.yaml` and route to Telegram via `monitoring/alertmanagerconfig.yaml`.

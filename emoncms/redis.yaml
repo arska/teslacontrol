@@ -1,0 +1,73 @@
+# Cache only. emoncms stores feed last-values here instead of writing
+# "UPDATE feeds SET time = ?, value = ? WHERE id = ?" to MariaDB on every
+# sample, which produced ~200-330 MB/day of binary log against 3.6 MB of
+# actual data and filled the database disk on 2026-08-21.
+#
+# Nothing here needs to survive a restart: the time series lives in PHPFina on
+# the emoncms PVC, and emoncms repopulates the last-values from the next
+# sample. Persistence is therefore off, which also means the container never
+# writes to disk and needs no PVC and no writable filesystem under an
+# arbitrary OpenShift UID.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: dockerhub.vshn.net/library/redis:8-alpine
+          args:
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            - --maxmemory
+            - 64mb
+            - --maxmemory-policy
+            - allkeys-lru
+          ports:
+            - containerPort: 6379
+              name: redis
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 96Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

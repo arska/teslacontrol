@@ -71,7 +71,14 @@ spec:
             - name: MYSQL_DATABASE
               value: "emoncms"
             - name: REDIS_ENABLED
-              value: "false"
+              value: "true"
+            - name: REDIS_HOST
+              value: "redis"
+            # Must be set explicitly. The Service named "redis" makes Kubernetes
+            # inject REDIS_PORT=tcp://<clusterIP>:6379, which shadows the
+            # entrypoint's ${REDIS_PORT:=6379} default and yields a bogus port.
+            - name: REDIS_PORT
+              value: "6379"
             - name: EMONCMS_DOMAIN
               value: "emoncms.aukia.com"
             - name: EMONCMS_LOG_LEVEL
