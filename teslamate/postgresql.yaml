@@ -9,6 +9,12 @@ spec:
       serviceLevel: besteffort
     size:
       plan: standard-2
+    # AppCat generates PersistentVolumeFillingUp / PersistentVolumeExpectedToFillUp
+    # rules in the instance namespace. They only reach us if we hand it an
+    # AlertmanagerConfig to copy over; without this, they fire into the void.
+    monitoring:
+      alertmanagerConfigRef: teslacontrol-alerts
+      alertmanagerConfigSecretRef: telegram-bot
     security:
       allowedNamespaces:
         - arska-teslacontrol

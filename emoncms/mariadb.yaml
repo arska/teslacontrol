@@ -8,6 +8,15 @@ spec:
       version: "11.8"
     size:
       plan: standard-2
+      # Every MariaDB plan ships 16Gi; disk must be overridden explicitly.
+      # AppCat only allows increasing this, never decreasing.
+      disk: 32Gi
+    # AppCat generates PersistentVolumeFillingUp / PersistentVolumeExpectedToFillUp
+    # rules in the instance namespace. They only reach us if we hand it an
+    # AlertmanagerConfig to copy over; without this, they fire into the void.
+    monitoring:
+      alertmanagerConfigRef: teslacontrol-alerts
+      alertmanagerConfigSecretRef: telegram-bot
     security:
       allowedNamespaces:
         - arska-teslacontrol

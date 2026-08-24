@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-exporter
+data:
+  blackbox.yml: |
+    modules:
+      # Internal service probe. Status code only.
+      http_app:
+        prober: http
+        timeout: 10s
+        http:
+          valid_status_codes: [200]
+          preferred_ip_protocol: ip4
+      # Internal probe for emoncms. emoncms answers 200 with a PHP fatal error
+      # in the body when the database is unreachable, so the status code alone
+      # reports a dead app as healthy. Match the body as well.
+      http_php:
+        prober: http
+        timeout: 10s
+        http:
+          valid_status_codes: [200]
+          preferred_ip_protocol: ip4
+          fail_if_body_matches_regexp:
+            - "(?i)(fatal error|uncaught [a-z_]*exception|mysqli_sql_exception)"
+      # Public URL probe: DNS, TLS, ingress and oauth2-proxy. An unauthenticated
+      # request never reaches the app, so a 403 from oauth2-proxy (or a 302 to
+      # Google) is the healthy answer. This proves the public path is intact;
+      # app health is what the internal probes above are for.
+      http_public:
+        prober: http
+        timeout: 10s
+        http:
+          valid_status_codes: [200, 302, 403]
+          follow_redirects: false
+          preferred_ip_protocol: ip4
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  labels:
+    app: blackbox-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app: blackbox-exporter
+    spec:
+      containers:
+        - name: blackbox-exporter
+          image: dockerhub.vshn.net/prom/blackbox-exporter:v0.28.0
+          args:
+            - --config.file=/etc/blackbox/blackbox.yml
+          ports:
+            - name: http
+              containerPort: 9115
+          volumeMounts:
+            - name: config
+              mountPath: /etc/blackbox
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+      volumes:
+        - name: config
+          configMap:
+            name: blackbox-exporter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  labels:
+    app: blackbox-exporter
+spec:
+  selector:
+    app: blackbox-exporter
+  ports:
+    - name: http
+      port: 9115
+      targetPort: http
