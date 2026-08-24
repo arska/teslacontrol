@@ -78,10 +78,12 @@ spec:
           annotations:
             summary: "TLS certificate for {{ $labels.instance }} expires soon"
             description: "The certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}. cert-manager should have renewed it by now."
-        # Diagnostic. User-workload monitoring scrapes only our own workloads, so
-        # it may not carry kube-state-metrics or kubelet series at all. If this
-        # fires, PodNotReady, PodRestarting, PVCAlmostFull and PVCExpectedToFillUp
-        # above can never fire and must be rebuilt on blackbox probes instead.
+        # Canary. User-workload monitoring scrapes our own workloads, so it need
+        # not carry kube-state-metrics or kubelet series at all. Verified present
+        # on 2026-08-24: this stayed silent while ProbeFailed fired from this same
+        # file. Keep it. If APPUiO ever stops exposing them, PodNotReady,
+        # PodRestarting, PVCAlmostFull and PVCExpectedToFillUp all go quiet
+        # without failing, which is the way this rule file dies unnoticed.
         - alert: PlatformMetricsUnavailable
           expr: |
             absent(kube_pod_status_ready{namespace="arska-teslacontrol"})
