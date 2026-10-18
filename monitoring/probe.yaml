@@ -69,3 +69,21 @@ spec:
         - redis.arska-teslacontrol.svc.cluster.local:6379
       labels:
         scope: internal
+---
+# Not a blackbox probe: json_exporter fetches evcc's state JSON and returns it
+# as evcc_loadpoint_* metrics. jobName is fixed so EvccStateUnavailable can
+# match on it.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: evcc-state
+spec:
+  jobName: evcc-state
+  interval: 60s
+  module: evcc
+  prober:
+    url: json-exporter.arska-teslacontrol.svc.cluster.local:7979
+  targets:
+    staticConfig:
+      static:
+        - http://evcc.arska-teslacontrol.svc.cluster.local:7070/api/state

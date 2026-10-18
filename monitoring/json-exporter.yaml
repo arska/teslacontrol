@@ -1,0 +1,95 @@
+# json_exporter turns evcc's /api/state into Prometheus metrics so that evcc
+# conditions can alert through the same AlertmanagerConfig as everything else.
+#
+# evcc's own messaging cannot do this for the vehicle limit: messenger/hub.go
+# overwrites the vehicleLimitSoc template attribute with the vehicle's evcc
+# limit setting (vehicle.GetLimitSoc()), so a message template never sees the
+# charge limit the car itself reports. The "Vehicle limit is below charging
+# goal" warning in the evcc UI is computed in the browser only.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: json-exporter
+data:
+  config.yml: |
+    modules:
+      evcc:
+        metrics:
+          # One series per loadpoint and value, e.g.
+          # evcc_loadpoint_vehicle_limit_soc{loadpoint="Carport",vehicle="Model S"}.
+          # vehicleLimitSoc is the limit the car reports (0 when no vehicle is
+          # connected or the vehicle API has no limit); effectivePlanSoc and
+          # effectiveLimitSoc are what evcc is aiming for.
+          - name: evcc_loadpoint
+            type: object
+            path: '{.loadpoints[*]}'
+            labels:
+              loadpoint: '{.title}'
+              vehicle: '{.vehicleTitle}'
+            values:
+              connected: '{.connected}'
+              charging: '{.charging}'
+              vehicle_soc: '{.vehicleSoc}'
+              vehicle_limit_soc: '{.vehicleLimitSoc}'
+              effective_limit_soc: '{.effectiveLimitSoc}'
+              effective_plan_soc: '{.effectivePlanSoc}'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: json-exporter
+  labels:
+    app: json-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: json-exporter
+  template:
+    metadata:
+      labels:
+        app: json-exporter
+    spec:
+      containers:
+        - name: json-exporter
+          image: dockerhub.vshn.net/prometheuscommunity/json-exporter:v0.8.0
+          args:
+            - --config.file=/etc/json-exporter/config.yml
+          ports:
+            - name: http
+              containerPort: 7979
+          volumeMounts:
+            - name: config
+              mountPath: /etc/json-exporter
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+      volumes:
+        - name: config
+          configMap:
+            name: json-exporter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: json-exporter
+  labels:
+    app: json-exporter
+spec:
+  selector:
+    app: json-exporter
+  ports:
+    - name: http
+      port: 7979
+      targetPort: http

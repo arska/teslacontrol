@@ -78,6 +78,46 @@ spec:
           annotations:
             summary: "TLS certificate for {{ $labels.instance }} expires soon"
             description: "The certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}. cert-manager should have renewed it by now."
+        # Mirrors evcc's "Vehicle limit is below charging goal" warning
+        # (assets/js/components/ChargingPlans/Warnings.vue), and also covers an
+        # evcc limit below 100% that the car would cut short. An evcc limit of
+        # 100% means "let the car decide", so it does not count. Requiring a
+        # non-zero vehicle limit skips loadpoints with no vehicle connected:
+        # evcc resets vehicleLimitSoc to 0 on disconnect.
+        - alert: EvccVehicleLimitTooLow
+          expr: |
+            evcc_loadpoint_vehicle_limit_soc > 0
+            and
+            (
+                evcc_loadpoint_vehicle_limit_soc < evcc_loadpoint_effective_plan_soc
+              or
+                (
+                  evcc_loadpoint_vehicle_limit_soc < evcc_loadpoint_effective_limit_soc
+                  and
+                  evcc_loadpoint_effective_limit_soc < 100
+                )
+            )
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.vehicle }} charge limit is below what evcc needs"
+            description: >-
+              {{ $labels.vehicle }} on {{ $labels.loadpoint }} has its own charge
+              limit at {{ $value }}%, but evcc is aiming for
+              {{ with printf "evcc_loadpoint_effective_plan_soc{loadpoint=%q} > 0" $labels.loadpoint | query }}{{ . | first | value }}% (charging plan){{ else }}{{ with printf "evcc_loadpoint_effective_limit_soc{loadpoint=%q}" $labels.loadpoint | query }}{{ . | first | value }}% (evcc limit){{ end }}{{ end }}.
+              Raise the limit in the Tesla app, or charging stops early.
+        # Without this, a broken json_exporter or evcc API change silences
+        # EvccVehicleLimitTooLow instead of failing it.
+        - alert: EvccStateUnavailable
+          expr: |
+            up{job="evcc-state"} == 0 or absent(up{job="evcc-state"})
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "evcc state is not being scraped"
+            description: "json_exporter could not fetch or parse evcc's /api/state for 15 minutes, so EvccVehicleLimitTooLow cannot fire."
         # Canary. User-workload monitoring scrapes our own workloads, so it need
         # not carry kube-state-metrics or kubelet series at all. Verified present
         # on 2026-08-24: this stayed silent while ProbeFailed fired from this same

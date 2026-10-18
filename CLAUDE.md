@@ -14,7 +14,7 @@ Plain Kubernetes/OpenShift manifests in per-app directories. No Helm, no Kustomi
 - **teslamate**: data logging with managed VSHNPostgreSQL, web UI exposed via oauth2-proxy
 - **emoncms**: energy monitoring receiving IoTaWatt data, custom rootless Docker image on GHCR, VSHNMariaDB for metadata, PVC for PHPFina feed data
 - **oauth2-proxy**: instances per app sharing Google OAuth credentials
-- **monitoring**: PrometheusRule + AlertmanagerConfig with Telegram alerts, plus a blackbox exporter probing every app (`monitoring/blackbox-exporter.yaml`, `monitoring/probe.yaml`)
+- **monitoring**: PrometheusRule + AlertmanagerConfig with Telegram alerts, plus a blackbox exporter probing every app (`monitoring/blackbox-exporter.yaml`, `monitoring/probe.yaml`), and a json_exporter turning evcc's `/api/state` into `evcc_loadpoint_*` metrics (`monitoring/json-exporter.yaml`)
 
 ## Deployment Environment
 
@@ -118,6 +118,8 @@ Nothing in Redis needs to survive a restart: the time series lives in PHPFina on
 Alerting rules live in `monitoring/prometheusrule.yaml` and route to Telegram via `monitoring/alertmanagerconfig.yaml`.
 
 **Probe apps from outside, not from status codes alone.** emoncms answers HTTP 200 with a PHP fatal error in the body when its database is unreachable, so a status-code check reports a dead app as healthy. The `http_php` blackbox module adds `fail_if_body_matches_regexp`. Internal probes (`http://<svc>.arska-teslacontrol.svc.cluster.local:<port>/`) test the app itself and bypass oauth2-proxy; public probes test DNS, TLS and ingress, where an unauthenticated 403 from oauth2-proxy is the healthy answer.
+
+**evcc alerts go through Prometheus, not evcc messaging.** evcc has no notification event for "vehicle limit below charging goal" (the UI computes it in the browser), and `messenger/hub.go` overwrites the `vehicleLimitSoc` template attribute with evcc's own per-vehicle limit setting, so a message template cannot see the car's real limit. `EvccVehicleLimitTooLow` compares `evcc_loadpoint_vehicle_limit_soc` against the plan SOC and any evcc limit below 100%. The car's limit is only as fresh as evcc's last vehicle poll.
 
 **Two Prometheus instances evaluate our alerts.** Rules in `monitoring/prometheusrule.yaml` run in `openshift-user-workload-monitoring/user-workload`; AppCat's instance-namespace rules run in `openshift-monitoring/k8s`. Both route to our Telegram. `kube_pod_status_ready` and `kubelet_volume_stats_*` were confirmed present in user-workload monitoring on 2026-08-24, so the pod and PVC rules do work for resources in `arska-teslacontrol`. `PlatformMetricsUnavailable` is the canary that catches it if that ever stops being true, because the failure mode is silence rather than an error.
 
