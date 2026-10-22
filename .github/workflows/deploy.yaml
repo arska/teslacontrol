@@ -23,7 +23,7 @@ jobs:
           sudo mv age/age-keygen /usr/local/bin/
 
       - name: Install oc CLI
-        uses: redhat-actions/openshift-tools-installer@v1
+        uses: redhat-actions/openshift-tools-installer@v3
         with:
           oc: "4"
 
