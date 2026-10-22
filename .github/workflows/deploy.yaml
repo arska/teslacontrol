@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install sops
-        uses: mdgreenwald/mozilla-sops-action@v1
+        uses: mdgreenwald/mozilla-sops-action@v2.1.2
 
       - name: Install age
         run: |
