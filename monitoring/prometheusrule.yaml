@@ -107,6 +107,53 @@ spec:
               limit at {{ $value }}%, but evcc is aiming for
               {{ with printf "evcc_loadpoint_effective_plan_soc{loadpoint=%q} > 0" $labels.loadpoint | query }}{{ . | first | value }}% (charging plan){{ else }}{{ with printf "evcc_loadpoint_effective_limit_soc{loadpoint=%q}" $labels.loadpoint | query }}{{ . | first | value }}% (evcc limit){{ end }}{{ end }}.
               Raise the limit in the Tesla app, or charging stops early.
+        # Load management backstop (docs/load-management.md). evcc throttles the
+        # Tesla to keep the main fuse circuit under maxCurrent; this fires when
+        # that is not enough, either because evcc cannot reach the car or
+        # because the other loads alone exceed the limit. A 35A fuse at
+        # 40-45A trips within minutes, so act on it rather than wait.
+        # The < 1e6 guard excludes the MaxFloat64 that evcc reports for a
+        # stale meter, which EvccCircuitMeterStale covers.
+        - alert: EvccCircuitOverCurrent
+          expr: |
+            evcc_circuit_current > evcc_circuit_max_current
+            and evcc_circuit_current < 1e6
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Circuit {{ $labels.circuit }} at {{ $value | printf \"%.1f\" }}A, over its limit"
+            description: >-
+              The highest phase on circuit {{ $labels.circuit }} draws
+              {{ $value | printf "%.1f" }}A, above evcc's limit of
+              {{ with printf "evcc_circuit_max_current{circuit=%q}" $labels.circuit | query }}{{ . | first | value }}{{ end }}A,
+              and evcc has not brought it down. Switch off the spa or water
+              heater before the main fuse trips.
+        - alert: EvccCircuitMeterStale
+          expr: |
+            evcc_circuit_current >= 1e6
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "evcc has no current reading for circuit {{ $labels.circuit }}"
+            description: >-
+              evcc cannot read the circuit meter (emoncms feeds older than 60s
+              or unreachable), so it treats the circuit as overloaded and will
+              not charge. Check that the IoTaWatt is posting to emoncms.
+        - alert: EvccCircuitMissing
+          expr: |
+            up{job="evcc-state"} == 1
+            unless on() evcc_circuit_max_current
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "evcc has no load management circuit"
+            description: >-
+              evcc's /api/state lists no circuit with a current limit, so
+              nothing stops the Tesla from tripping the main fuse. Restore the
+              circuit from docs/load-management.md.
         # Without this, a broken json_exporter or evcc API change silences
         # EvccVehicleLimitTooLow instead of failing it.
         - alert: EvccStateUnavailable

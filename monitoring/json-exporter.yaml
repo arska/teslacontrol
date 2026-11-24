@@ -33,6 +33,21 @@ data:
               vehicle_limit_soc: '{.vehicleLimitSoc}'
               effective_limit_soc: '{.effectiveLimitSoc}'
               effective_plan_soc: '{.effectivePlanSoc}'
+          # Load management (docs/load-management.md). One series per evcc
+          # circuit, e.g. evcc_circuit_current{circuit="main"}. current is the
+          # highest phase current the circuit meter reports; evcc sets it to
+          # MaxFloat64 (~1.8e308) once the meter has failed for longer than the
+          # circuit timeout, which also blocks charging. current is omitted
+          # when the circuit has no maxCurrent.
+          - name: evcc_circuit
+            type: object
+            path: '{.circuits[*]}'
+            labels:
+              circuit: '{.name}'
+            values:
+              current: '{.current}'
+              max_current: '{.maxCurrent}'
+              power: '{.power}'
 ---
 apiVersion: apps/v1
 kind: Deployment
