@@ -55,12 +55,15 @@ jobs:
 
       # evcc, json_exporter and blackbox_exporter read their config only at
       # startup, and a changed Secret or ConfigMap does not restart a pod.
-      # Restart exactly when oc reports the config object as changed.
+      # Restart exactly when the stored config changed. For the evcc Secret,
+      # compare its data: a Secret written with stringData reports
+      # "configured" on every apply, changed or not.
       - name: Apply evcc
         run: |
-          out=$(oc apply -f evcc/)
-          echo "$out"
-          if grep -qx 'secret/evcc configured' <<<"$out"; then
+          before=$(oc get secret evcc -o jsonpath='{.data}' 2>/dev/null | sha256sum)
+          oc apply -f evcc/
+          after=$(oc get secret evcc -o jsonpath='{.data}' | sha256sum)
+          if [ "$before" != "$after" ]; then
             oc rollout restart deploy/evcc
           fi
 
