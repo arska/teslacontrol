@@ -87,6 +87,11 @@ circuits:
     meter: house
 ```
 
+A second meter, `tesla-charge`, gives the loadpoint real charge power: feed 29
+× 3, because the car's CT sits on L1 only and the car charges evenly on 3
+phases. It is selected as the charge meter in the loadpoint settings of the
+evcc UI. It is wrong if the car ever charges on 1 phase.
+
 The URL goes to the emoncms Service directly, so it bypasses oauth2-proxy and
 works over plain HTTP inside the cluster. The read key is `users.apikey_read`
 in the emoncms database.
