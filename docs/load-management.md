@@ -12,11 +12,14 @@ IoTaWatt (LAN) --10s--> emoncms --HTTP, in-cluster--> evcc circuit "main"
                                        Tesla Fleet API <-+ set charge amps
 ```
 
-- An evcc **circuit** has `maxCurrent: 32` (35A fuse, minus a margin for
-  measurement lag and the W-to-A approximation) and a **meter** that reports the
-  whole house's per-phase current, including the car.
+- An evcc **circuit** has `maxCurrent: 34` and a **meter** that reports the
+  whole house's per-phase current, including the car. The 1A margin under the
+  35A fuse covers watts ÷ volts reading low for motor loads. A larger margin
+  costs about 690 W of charge power per amp, because the car is throttled on
+  all 3 phases while only L1 is full. Overshooting during evcc's reaction time
+  is fine: a 35A breaker carries 1.13× (39.5A) for at least an hour.
 - Each cycle (60s) evcc caps the Tesla's current so the highest phase stays
-  under 32A. If there isn't room even for the car's minimum current (6A), evcc
+  under 34A. If there isn't room even for the car's minimum current (6A), evcc
   pauses charging and resumes when there is.
 - **Fail-safe:** if the meter errors for longer than the circuit `timeout`
   (default 1 minute), evcc sets the circuit's current to MaxFloat64 and allows
@@ -80,7 +83,7 @@ meters:
 circuits:
   - name: main
     title: Hauptsicherung
-    maxCurrent: 32
+    maxCurrent: 34
     meter: house
 ```
 
@@ -97,6 +100,12 @@ circuit exists.
 
 Notes:
 
+- After an evcc restart while the car is charging, evcc briefly stops it: it
+  starts with an offered current of 0, so it counts the car's draw, which the
+  house meter already includes, a second time. One cycle later it measures the
+  real load and resumes. Seen on 2026-11-25 at 21:30.
+- `interval` is one fixed ticker for evcc's whole loop (`core/site.go`), so it
+  cannot be shorter while charging and longer while idle.
 - `interval: 60s` (top of `evcc.yaml`) sets how often evcc reads the meter and
   the car. Each cycle costs one billed Tesla `vehicle_data` call, because the
   Vehicle API-only charger reads its status from the car.
