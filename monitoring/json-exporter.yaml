@@ -39,9 +39,11 @@ data:
           # MaxFloat64 (~1.8e308) once the meter has failed for longer than the
           # circuit timeout, which also blocks charging. current is omitted
           # when the circuit has no maxCurrent.
+          # evcc publishes circuits as a map keyed by name, and json_exporter's
+          # JSONPath cannot iterate a map with [*], so each circuit is named.
           - name: evcc_circuit
             type: object
-            path: '{.circuits[*]}'
+            path: '{.circuits.main}'
             labels:
               circuit: '{.name}'
             values:

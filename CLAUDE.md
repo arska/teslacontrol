@@ -81,6 +81,8 @@ for route in $(oc get routes -o name | grep emoncms-api); do
 done
 ```
 
+A changed Secret or ConfigMap does not restart the pods that read it, and evcc, json_exporter and blackbox_exporter only read their config at startup. CI restarts each of them when `oc apply` reports its config object as `configured`. json_exporter ran on its 2026-11-10 config until 2026-11-25 before this existed. A loadpoint or meter changed in the evcc UI also needs `oc rollout restart deploy/evcc`.
+
 Note: `oc apply` does not update `spec.host` on existing Routes/Ingress. To change hostnames, delete and recreate. OpenShift auto-creates Routes from Ingresses — the `insecureEdgeTerminationPolicy` annotation on Ingresses is ignored, so API routes must be patched after apply.
 
 ## Docker Images

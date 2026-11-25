@@ -53,8 +53,16 @@ jobs:
           "
           docker run --rm -v /tmp/evcc.yaml:/etc/evcc.yaml:ro --entrypoint evcc dockerhub.vshn.net/evcc/evcc:latest checkconfig
 
+      # evcc, json_exporter and blackbox_exporter read their config only at
+      # startup, and a changed Secret or ConfigMap does not restart a pod.
+      # Restart exactly when oc reports the config object as changed.
       - name: Apply evcc
-        run: oc apply -f evcc/
+        run: |
+          out=$(oc apply -f evcc/)
+          echo "$out"
+          if grep -qx 'secret/evcc configured' <<<"$out"; then
+            oc rollout restart deploy/evcc
+          fi
 
       - name: Apply teslamate
         run: oc apply -f teslamate/
@@ -77,4 +85,11 @@ jobs:
           done
 
       - name: Apply monitoring
-        run: oc apply -f monitoring/
+        run: |
+          out=$(oc apply -f monitoring/)
+          echo "$out"
+          for app in json-exporter blackbox-exporter; do
+            if grep -qx "configmap/$app configured" <<<"$out"; then
+              oc rollout restart "deploy/$app"
+            fi
+          done
